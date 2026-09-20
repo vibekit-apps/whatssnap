@@ -1,112 +1,24 @@
-// Zero-dependency server: static files from public/, JSON API from the
-// `routes` table below. No npm install needed, so the first build is fast.
-// Add express later if you actually need it.
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
-
-const PORT = process.env.PORT || 3000;
-const PUBLIC = path.join(__dirname, 'public');
-
-const MIME = {
-  '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'text/javascript',
-  '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png',
-  '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp',
-  '.ico': 'image/x-icon', '.woff2': 'font/woff2', '.txt': 'text/plain; charset=utf-8',
-};
-
-// ── API routes ────────────────────────────────────────────────────────
-// Key is "METHOD /path". Handlers get (req, res) and may be async.
-// Anything not matched here falls through to the static files in public/.
-//
-//   const store = require('./lib/store');
-//   'GET /api/items':  (req, res) => json(res, store.read('items')),
-//   'POST /api/items': async (req, res) => {
-//     const item = await readBody(req);
-//     json(res, store.write('items', [...store.read('items'), item]), 201);
-//   },
-const routes = {
-  'GET /health': (req, res) => json(res, { status: 'ok', uptime: process.uptime() }),
-};
-
-function json(res, data, status = 200) {
-  const payload = JSON.stringify(data);
-  res.writeHead(status, {
-    'Content-Type': 'application/json',
-    'Content-Length': Buffer.byteLength(payload),
-  });
-  res.end(payload);
-}
-
-/** Parse a JSON request body: `const data = await readBody(req)`. */
-function readBody(req) {
-  return new Promise((resolve, reject) => {
-    let raw = '';
-    req.on('data', (chunk) => {
-      raw += chunk;
-      // Cap the body so one bad request can't exhaust memory.
-      if (raw.length > 1e6) { req.destroy(); reject(new Error('Body too large')); }
-    });
-    req.on('end', () => {
-      try { resolve(raw ? JSON.parse(raw) : {}); }
-      catch { reject(new Error('Invalid JSON body')); }
-    });
-    req.on('error', reject);
-  });
-}
-
-function sendFile(res, file, data) {
-  res.writeHead(200, { 'Content-Type': MIME[path.extname(file)] || 'application/octet-stream' });
-  res.end(data);
-}
-
-/**
- * Decode a URL path, or null when the client sent broken percent-encoding.
- *
- * decodeURIComponent THROWS on a malformed escape ('/%E0%A4%A'), and any
- * crawler or fuzzer sends those eventually. Unhandled, it took the whole app
- * down: one bad URL, process exits, the user's site is dead until something
- * restarts it. A truncated escape is a bad request, not a server fault, so it
- * gets a 400 and the server stays up.
- */
-function safeDecode(pathname) {
-  try {
-    return decodeURIComponent(pathname);
-  } catch {
-    return null;
-  }
-}
-
-function serveStatic(req, res, pathname) {
-  const decoded = pathname === '/' ? 'index.html' : safeDecode(pathname);
-  if (decoded === null) return json(res, { error: 'Bad request' }, 400);
-  const rel = decoded.replace(/^\/+/, '');
-  const file = path.join(PUBLIC, rel);
-  // Keep resolved paths inside public/ so `..` can't escape the web root.
-  if (file !== PUBLIC && !file.startsWith(PUBLIC + path.sep)) return json(res, { error: 'Not found' }, 404);
-
-  fs.readFile(file, (err, data) => {
-    if (!err) return sendFile(res, file, data);
-    // Extensionless miss = a client-side route; hand back the entry page.
-    if (path.extname(rel)) return json(res, { error: 'Not found' }, 404);
-    const entry = path.join(PUBLIC, 'index.html');
-    fs.readFile(entry, (e, html) => (e ? json(res, { error: 'Not found' }, 404) : sendFile(res, entry, html)));
-  });
-}
-
-http.createServer(async (req, res) => {
-  // EVERY path is inside the try, including static files. It used to early-
-  // return into serveStatic before the boundary, so anything that threw there
-  // was an uncaught exception and killed the process instead of failing one
-  // request.
-  let pathname = req.url || '/';
-  try {
-    ({ pathname } = new URL(req.url, `http://${req.headers.host || 'localhost'}`));
-    const handler = routes[`${req.method} ${pathname}`];
-    if (handler) await handler(req, res);
-    else serveStatic(req, res, pathname);
-  } catch (err) {
-    console.error(`${req.method} ${pathname} failed:`, err.message);
-    if (!res.headersSent) json(res, { error: 'Server error' }, 500);
-  }
-}).listen(PORT, () => console.log(`Listening on port ${PORT}`));
+const http=require('http'),fs=require('fs'),path=require('path'),crypto=require('crypto'),store=require('./lib/store');
+const PORT=process.env.PORT||3000,PUBLIC=path.join(__dirname,'public');
+const MIME={'.html':'text/html; charset=utf-8','.css':'text/css','.js':'text/javascript','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.gif':'image/gif','.webp':'image/webp','.ico':'image/x-icon','.woff2':'font/woff2'};
+const db=()=>store.read('whatssnap',{users:[],sessions:[],friendships:[],chats:[],messages:[],stories:[]});
+const put=d=>store.write('whatssnap',d);const id=()=>crypto.randomUUID();
+function json(res,data,status=200){let p=JSON.stringify(data);res.writeHead(status,{'Content-Type':'application/json','Content-Length':Buffer.byteLength(p)});res.end(p)}
+function body(req){return new Promise((ok,no)=>{let r='';req.on('data',c=>{r+=c;if(r.length>8e6){req.destroy();no(Error('Too large'))}});req.on('end',()=>{try{ok(r?JSON.parse(r):{})}catch{no(Error('Invalid JSON'))}});req.on('error',no)})}
+function hash(password,salt=crypto.randomBytes(16).toString('hex')){return{salt,hash:crypto.scryptSync(password,salt,64).toString('hex')}}
+function auth(req,d){let token=(req.headers.authorization||'').replace(/^Bearer /,'');let s=d.sessions.find(x=>x.token===token);return s&&d.users.find(x=>x.id===s.userId)}
+function safeUser(u){return{id:u.id,username:u.username,display:u.display||u.username,bio:u.bio||'',avatar:u.avatar||''}}
+function myChats(d,u){return d.chats.filter(c=>c.members.includes(u.id)).map(c=>{let users=c.members.filter(x=>x!==u.id).map(x=>safeUser(d.users.find(y=>y.id===x)));let msgs=d.messages.filter(m=>m.chatId===c.id);return{...c,users,last:msgs.at(-1)||null}})}
+const routes={
+'POST /api/register':async(req,res)=>{let x=await body(req),d=db(),username=String(x.username||'').toLowerCase().trim();if(!/^[a-z0-9_]{3,18}$/.test(username)||String(x.password||'').length<6)return json(res,{error:'Use a valid username and a 6+ character password'},400);if(d.users.some(u=>u.username===username))return json(res,{error:'Username is taken'},409);let h=hash(x.password),u={id:id(),username,display:username,bio:'',avatar:'',...h},token=crypto.randomBytes(32).toString('hex');d.users.push(u);d.sessions.push({token,userId:u.id});put(d);json(res,{token,user:safeUser(u)},201)},
+'POST /api/login':async(req,res)=>{let x=await body(req),d=db(),u=d.users.find(v=>v.username===String(x.username||'').toLowerCase());if(!u||hash(x.password,u.salt).hash!==u.hash)return json(res,{error:'Incorrect username or password'},401);let token=crypto.randomBytes(32).toString('hex');d.sessions.push({token,userId:u.id});put(d);json(res,{token,user:safeUser(u)})},
+'GET /api/sync':(req,res)=>{let d=db(),u=auth(req,d);if(!u)return json(res,{error:'Sign in required'},401);let chats=myChats(d,u),ids=new Set(chats.map(c=>c.id)),stories=d.stories.filter(s=>Date.now()-s.created<86400000&&s.userId!==u.id).map(s=>({...s,user:safeUser(d.users.find(x=>x.id===s.userId))}));json(res,{user:safeUser(u),friends:d.friendships.filter(f=>f.includes(u.id)).map(f=>safeUser(d.users.find(x=>x.id===f.find(y=>y!==u.id)))),chats,messages:d.messages.filter(m=>ids.has(m.chatId)),stories})},
+'POST /api/friends':async(req,res)=>{let x=await body(req),d=db(),u=auth(req,d);if(!u)return json(res,{error:'Sign in required'},401);let other=d.users.find(v=>v.username===String(x.username||'').toLowerCase());if(!other||other.id===u.id)return json(res,{error:'Username not found'},404);if(!d.friendships.some(f=>f.includes(u.id)&&f.includes(other.id)))d.friendships.push([u.id,other.id]);let chat=d.chats.find(c=>c.type==='direct'&&c.members.includes(u.id)&&c.members.includes(other.id));if(!chat){chat={id:id(),type:'direct',name:'',members:[u.id,other.id],created:Date.now()};d.chats.push(chat)}put(d);json(res,{friend:safeUser(other),chat},201)},
+'POST /api/groups':async(req,res)=>{let x=await body(req),d=db(),u=auth(req,d);if(!u)return json(res,{error:'Sign in required'},401);let members=[...new Set([u.id,...(x.members||[])])];if(members.length<3)return json(res,{error:'Choose at least two friends'},400);let c={id:id(),type:'group',name:String(x.name||'Group').slice(0,30),members,created:Date.now()};d.chats.push(c);put(d);json(res,c,201)},
+'POST /api/messages':async(req,res)=>{let x=await body(req),d=db(),u=auth(req,d),c=d.chats.find(v=>v.id===x.chatId);if(!u||!c?.members.includes(u.id))return json(res,{error:'Not allowed'},403);let m={id:id(),chatId:c.id,userId:u.id,type:x.type==='image'?'image':'text',text:String(x.text||'').slice(0,2000),data:x.type==='image'?String(x.data||''):'',created:Date.now(),seenBy:[u.id]};d.messages.push(m);put(d);json(res,m,201)},
+'POST /api/stories':async(req,res)=>{let x=await body(req),d=db(),u=auth(req,d);if(!u)return json(res,{error:'Sign in required'},401);let s={id:id(),userId:u.id,data:String(x.data||''),created:Date.now()};d.stories.push(s);put(d);json(res,s,201)},
+'PATCH /api/profile':async(req,res)=>{let x=await body(req),d=db(),u=auth(req,d);if(!u)return json(res,{error:'Sign in required'},401);u.display=String(x.display||u.username).slice(0,30);u.bio=String(x.bio||'').slice(0,100);if(x.avatar)u.avatar=String(x.avatar);put(d);json(res,safeUser(u))},
+'POST /api/logout':(req,res)=>{let d=db(),token=(req.headers.authorization||'').replace(/^Bearer /,'');d.sessions=d.sessions.filter(s=>s.token!==token);put(d);json(res,{ok:true})}}
+function sendFile(res,file,data){res.writeHead(200,{'Content-Type':MIME[path.extname(file)]||'application/octet-stream'});res.end(data)}
+function serve(req,res,pathname){let rel=pathname==='/'?'index.html':decodeURIComponent(pathname).replace(/^\/+/,''),file=path.join(PUBLIC,rel);if(file!==PUBLIC&&!file.startsWith(PUBLIC+path.sep))return json(res,{error:'Not found'},404);fs.readFile(file,(e,data)=>{if(!e)return sendFile(res,file,data);if(path.extname(rel))return json(res,{error:'Not found'},404);fs.readFile(path.join(PUBLIC,'index.html'),(x,h)=>x?json(res,{error:'Not found'},404):sendFile(res,path.join(PUBLIC,'index.html'),h))})}
+http.createServer(async(req,res)=>{let pathname='/';try{pathname=new URL(req.url,`http://${req.headers.host||'localhost'}`).pathname;let fn=routes[`${req.method} ${pathname}`];fn?await fn(req,res):serve(req,res,pathname)}catch(e){console.error(e);if(!res.headersSent)json(res,{error:e.message||'Server error'},500)}}).listen(PORT,'0.0.0.0',()=>console.log(`Listening on port ${PORT}`));
