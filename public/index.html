@@ -1,62 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Your app</title>
-<link rel="icon" href="https://vibekit.bot/public/favicon.ico" sizes="any">
-<link rel="icon" type="image/png" sizes="32x32" href="https://vibekit.bot/public/favicon-32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="https://vibekit.bot/public/favicon-16.png">
-<link rel="apple-touch-icon" href="https://vibekit.bot/public/apple-touch-icon.png">
-<link rel="stylesheet" href="/styles.css">
-</head>
-<body>
-<div class="wrap">
-  <div class="topbar">
-    <a href="https://vibekit.bot" class="wordmark"><img src="https://vibekit.bot/public/Group2.png" alt=""> VibeKit</a>
-    <div class="status"><span class="dot"></span>Your app is live</div>
-  </div>
-
-  <h1 id="app-name">Your app</h1>
-  <p class="lead">This is your starter. Open the chat with your AI agent and tell it what to build — the page updates as you go.</p>
-
-  <div class="cards">
-    <div class="card">
-      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
-      <h3>Chat to customize</h3>
-      <p>Describe what you want. Your agent edits the code and redeploys automatically.</p>
-    </div>
-    <div class="card">
-      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
-      <h3>Iterate fast</h3>
-      <p>Every change you ask for ships in seconds, with full source on GitHub.</p>
-    </div>
-    <div class="card">
-      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>
-      <h3>Yours to keep</h3>
-      <p>The code is yours. Connect a custom domain or fork it whenever you like.</p>
-    </div>
-  </div>
-
-  <a class="cta" id="open-chat" href="https://app.vibekit.bot">Open chat
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-  </a>
-
-  <footer>
-    <span>Built with VibeKit</span>
-    <a href="https://vibekit.bot">vibekit.bot</a>
-  </footer>
-</div>
-
-<script>
-  // Name the page after the subdomain it's served from, so this file stays
-  // static (no build step, no server templating).
-  var sub = location.hostname.split('.')[0];
-  if (sub && sub !== 'localhost') {
-    document.getElementById('app-name').textContent = sub;
-    document.title = sub;
-    document.getElementById('open-chat').href = 'https://app.vibekit.bot/app/' + sub;
-  }
-</script>
-</body>
-</html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0f172a"><title>whatssnap</title><link rel="stylesheet" href="/styles.css"><script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script></head><body>
+<div id="auth" class="auth"><div class="brandmark"><i data-lucide="aperture"></i></div><h1>whatssnap</h1><p>Your moments. Your people. Your style.</p><form id="authForm"><label>Choose your username</label><div class="input"><span>@</span><input id="joinName" required minlength="3" maxlength="18" pattern="[a-zA-Z0-9_]+" placeholder="yourname" autocomplete="username"></div><button class="primary">Create profile</button></form><small>No password needed for this demo.</small></div>
+<div id="app" class="app hidden"><header><button class="avatar" data-go="profile" id="miniAvatar">Y</button><div><span class="eyebrow" id="pageEyebrow">YOUR MESSAGES</span><h1 id="pageTitle">Chats</h1></div><button class="iconbtn" data-go="add" aria-label="Add friends"><i data-lucide="user-plus"></i></button></header>
+<main>
+<section id="feed" class="screen active"><div class="stories"><button class="story" data-go="camera"><span class="storyring own"><i data-lucide="plus"></i></span><b>Your snap</b></button><div id="friendStories"></div></div><div class="sectionhead"><h2>Messages</h2><span id="chatCount"></span></div><div id="chatList" class="chatlist"></div><div id="emptyChats" class="empty"><i data-lucide="message-circle"></i><h3>Your chats live here</h3><p>Add a friend by username to start talking.</p><button class="secondary" data-go="add">Add a friend</button></div></section>
+<section id="conversation" class="screen"><div class="conversationTop"><button class="back" data-go="feed"><i data-lucide="chevron-left"></i></button><div class="avatar small" id="conAvatar"></div><div><h2 id="conName"></h2><span class="online">Active now</span></div></div><div id="messages" class="messages"></div><form id="messageForm" class="composer"><button type="button" class="attach" data-go="camera"><i data-lucide="camera"></i></button><input id="messageInput" placeholder="Message…" autocomplete="off"><button class="send"><i data-lucide="send"></i></button></form></section>
+<section id="camera" class="screen camera"><div class="camerahead"><button class="back" data-go="feed"><i data-lucide="x"></i></button><strong>Create a snap</strong><button id="flipCamera" class="back"><i data-lucide="refresh-cw"></i></button></div><div class="viewfinder"><video id="video" autoplay muted playsinline></video><canvas id="canvas"></canvas><div id="stickerLayer"></div><div class="cameraFallback"><i data-lucide="camera"></i><span>Allow camera access to capture a snap</span></div></div><div class="filters"><button data-filter="none" class="selected">Clean</button><button data-filter="warm">Warm</button><button data-filter="mono">Mono</button><button data-filter="cool">Cool</button></div><div class="stickers"><button data-sticker="★">Star</button><button data-sticker="♥">Heart</button><button data-sticker="✦">Spark</button></div><button id="capture" class="shutter" aria-label="Take photo"><span></span></button><div id="sendSnap" class="snapActions hidden"><button id="retake" class="secondary">Retake</button><button id="sendPhoto" class="primary">Send to friend</button></div></section>
+<section id="add" class="screen"><div class="intro"><span class="eyebrow">GROW YOUR CIRCLE</span><h2>Add friends</h2><p>Find someone using their exact username.</p></div><form id="addForm" class="search"><i data-lucide="search"></i><input id="friendName" required pattern="[a-zA-Z0-9_]+" placeholder="Search username"><button>Find</button></form><div id="addResult"></div><div class="privacy"><i data-lucide="shield-check"></i><div><b>Private by default</b><span>We never suggest random people.</span></div></div></section>
+<section id="profile" class="screen"><div class="profileHero"><label class="profileAvatar"><span id="bigAvatar">Y</span><input id="avatarInput" type="file" accept="image/*"><i data-lucide="camera"></i></label><h2 id="profileHandle">@you</h2><span>Tap your photo to change it</span></div><form id="profileForm" class="settings"><label>Username<input id="profileName" required pattern="[a-zA-Z0-9_]+"></label><label>Display name<input id="displayName" maxlength="30" placeholder="Your name"></label><label>Bio<textarea id="bio" maxlength="100" placeholder="Say something about yourself"></textarea></label><button class="primary">Save changes</button></form><button id="signOut" class="danger">Sign out</button></section>
+</main><nav><button data-go="feed" class="active"><i data-lucide="message-circle"></i><span>Chats</span></button><button data-go="camera"><i data-lucide="camera"></i><span>Camera</span></button><button data-go="add"><i data-lucide="user-plus"></i><span>Add</span></button><button data-go="profile"><i data-lucide="user-round"></i><span>Profile</span></button></nav></div><div id="toast"></div><script src="/app.js"></script></body></html>
